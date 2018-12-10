@@ -18,12 +18,21 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class SignInActivity extends AppCompatActivity implements View.OnClickListener{
 
@@ -38,6 +47,8 @@ public class SignInActivity extends AppCompatActivity implements View.OnClickLis
     // Firebase Authentication provides backend services, easy-to-use SDKs,
     // and ready-made UI libraries to authenticate users to your app.
     private FirebaseAuth mFirebaseAuth;
+    // Access a Cloud Firestore instance from your Activity
+    FirebaseFirestore db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +57,9 @@ public class SignInActivity extends AppCompatActivity implements View.OnClickLis
 
         // Initialize Firebase Auth
         mFirebaseAuth=FirebaseAuth.getInstance();
+
+        // Inıtialize the Firebase Firestore
+        db=FirebaseFirestore.getInstance();
 
         // Configure sign-in to request the user's ID, email address, and basic
         // profile. ID and basic profile are included in DEFAULT_SIGN_IN.
@@ -118,6 +132,7 @@ public class SignInActivity extends AppCompatActivity implements View.OnClickLis
         }
     }
 
+
     private void firebaseAuthWithGoogle(GoogleSignInAccount acct) {
 
         Log.d(TAG, "firebaseAuthWithGoogle:" + acct.getId());
@@ -147,10 +162,78 @@ public class SignInActivity extends AppCompatActivity implements View.OnClickLis
         if(account!=null){
             Toast.makeText(this, "Logged In", Toast.LENGTH_SHORT).show();
             Intent mainActivityIntent=new Intent(SignInActivity.this,MainActivity.class);
+            isNewUser();
             startActivity(mainActivityIntent);
         } else{
             Toast.makeText(this, "Failed when Logging In", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    /**
+     * Checks is logged in user is a new user or existing user.
+     * If it's a new user add the user to database otherwise don't.
+     */
+    public void isNewUser(){
+        // db collection path for reading operations.
+        db.collection("users")
+                .get()
+                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        if (task.isSuccessful()) {
+                            // String for assign the emails which are read from database.
+                            String email;
+                            // Loop for query each email.
+                            for (QueryDocumentSnapshot document : task.getResult()) {
+                                Log.d(TAG, document.getId() + " => " + document.getData());
+                                // Log.d(TAG,"Email: "+document.get("email"));
+                                email=document.get("email").toString();
+                                // If it's not a new user don't add the user to database
+                                if(checkUser(email)) break;
+                                // If it's a new user add the user to database
+                                else addUserToDb();
+                            }
+                        } else {
+                            Log.w(TAG, "Error getting documents.", task.getException());
+                        }
+                    }
+                });
+    }
+
+    /**
+     * Adds the user to database.
+     */
+    public void addUserToDb(){
+        // Create a new user with a first and last name
+        Map<String, Object> user = new HashMap<>();
+        user.put("user_id", mFirebaseAuth.getCurrentUser().getUid());
+        user.put("name", mFirebaseAuth.getCurrentUser().getDisplayName());
+        user.put("email", mFirebaseAuth.getCurrentUser().getEmail());
+
+        // Add a new document with a generated ID
+        db.collection("users")
+                .add(user)
+                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                    @Override
+                    public void onSuccess(DocumentReference documentReference) {
+                        Log.d(TAG, "DocumentSnapshot added with ID: " + documentReference.getId());
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.w(TAG, "Error adding document", e);
+                    }
+                });
+    }
+
+    /**
+     * Checks two Strings(email). Returns true if Strings are equal, otherwise returns false.
+     * @param email1
+     * @return
+     */
+    public boolean checkUser(String email1){
+        return email1==mFirebaseAuth.getCurrentUser().getEmail().toString() ?   true:  false;
     }
 
 }
