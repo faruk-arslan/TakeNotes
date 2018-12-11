@@ -1,5 +1,4 @@
 package com.example.fr.takenotes;
-
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -10,7 +9,6 @@ import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
-
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
@@ -20,6 +18,7 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
+
 
 
 public class MainActivity extends AppCompatActivity {
@@ -59,8 +58,6 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(addNoteIntent);
             }
         });
-
-
 //        createData();
 
         mRecyclerView=(RecyclerView) findViewById(R.id.recycler_view);
@@ -72,9 +69,18 @@ public class MainActivity extends AppCompatActivity {
          */
         mRecyclerView.setHasFixedSize(true);
         mAdapter= new NotesAdapter(noteArrayList);
-        getDataFromDB();
+
+        if(mFirebaseAuth.getCurrentUser()!=null){
+            getDataFromDB();
+        }else{
+            Intent signInIntent=new Intent(MainActivity.this,SignInActivity.class);
+            startActivity(signInIntent);
+        }
         mRecyclerView.setAdapter(mAdapter);
     }
+
+
+
 
     @Override
     protected void onStart() {
@@ -90,6 +96,7 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "We have logged in user: "+currentUser.getDisplayName(),
                     Toast.LENGTH_SHORT).show();
         }
+        getDataFromDB();
     }
 
     private void getDataFromDB(){
@@ -100,20 +107,20 @@ public class MainActivity extends AppCompatActivity {
                     public void onComplete(@NonNull Task<QuerySnapshot> task) {
                         if (task.isSuccessful()) {
                             Note note;
-                            ArrayList<Note> na=new ArrayList<>();
+                            noteArrayList.clear();
                             for (QueryDocumentSnapshot document : task.getResult()) {
-
                                 note=new Note(document.getString("title"),document.getString("note"));
                                 Log.d(TAG, document.getId() + " => " + note.getmTitle()+"-"+note.getmNote());
-                                na.add(note);
-                                mAdapter.update(na);
-                                Log.d(TAG, "---------"+na.size());
+                                noteArrayList.add(note);
+                                Log.d(TAG, "---------"+noteArrayList.size());
                             }
+                            mAdapter.notifyDataSetChanged();
                         } else {
                             Log.d(TAG, "Error getting documents: ", task.getException());
                         }
                     }
                 });
+
     }
 
 //    public void createData(){

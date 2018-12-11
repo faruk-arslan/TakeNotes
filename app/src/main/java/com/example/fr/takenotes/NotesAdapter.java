@@ -1,5 +1,6 @@
 package com.example.fr.takenotes;
 
+
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -16,14 +17,14 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NotesViewHol
 
     public NotesAdapter(ArrayList<Note> data){
         this.notesArrayList=data;
-        update(data);
+//        update(data);
     }
 
-    public void update(ArrayList<Note> data) {
-        notesArrayList.clear();
-        notesArrayList.addAll(data);
-        notifyDataSetChanged();
-    }
+//    public void update(ArrayList<Note> data) {
+//        notesArrayList.clear();
+//        notesArrayList.addAll(data);
+//        notifyDataSetChanged();
+//    }
 
     @NonNull
     @Override
