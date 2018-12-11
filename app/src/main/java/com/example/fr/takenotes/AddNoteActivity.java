@@ -16,6 +16,8 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -70,12 +72,14 @@ public class AddNoteActivity extends AppCompatActivity {
     private void saveNoteToDb() {
         mTitle=mTitleEditText.getText().toString().trim();
         mNote=mNoteEditText.getText().toString().trim();
-
+        // Get the current timestamp
+        Long time = new Date().getTime();
         // Create a new note with a first and last name
         Map<String, Object> note = new HashMap<>();
         // note.put("user_id", mFirebaseAuth.getCurrentUser().getUid());
         note.put("title", mTitle);
         note.put("note", mNote);
+        note.put("date",time);
 
         // Add a new document with a generated ID
         db.collection("notes").document(mFirebaseAuth.getCurrentUser().getUid()).
@@ -94,5 +98,8 @@ public class AddNoteActivity extends AppCompatActivity {
                     }
                 });
 
+        // Go back to the MainActivity.
+        finish();
     }
+
 }

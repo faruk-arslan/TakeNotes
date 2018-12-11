@@ -14,6 +14,7 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
@@ -95,13 +96,16 @@ public class MainActivity extends AppCompatActivity {
         else{
             Toast.makeText(this, "We have logged in user: "+currentUser.getDisplayName(),
                     Toast.LENGTH_SHORT).show();
+            getDataFromDB();
         }
-        getDataFromDB();
+
     }
 
     private void getDataFromDB(){
         db.collection("notes").document(mFirebaseAuth.getCurrentUser().getUid()).
-                collection("note_list").get()
+                collection("note_list")
+                .orderBy("date", Query.Direction.ASCENDING)
+                .get()
                 .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
                     @Override
                     public void onComplete(@NonNull Task<QuerySnapshot> task) {
