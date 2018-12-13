@@ -162,7 +162,8 @@ public class SignInActivity extends AppCompatActivity implements View.OnClickLis
         if(account!=null){
             Toast.makeText(this, "Logged In", Toast.LENGTH_SHORT).show();
             Intent mainActivityIntent=new Intent(SignInActivity.this,MainActivity.class);
-            isNewUser();
+            //isNewUser();
+            addUserToDb();
             startActivity(mainActivityIntent);
         } else{
             Toast.makeText(this, "Failed when Logging In", Toast.LENGTH_SHORT).show();
@@ -183,16 +184,33 @@ public class SignInActivity extends AppCompatActivity implements View.OnClickLis
                         if (task.isSuccessful()) {
                             // String for assign the emails which are read from database.
                             String email;
-                            // Loop for query each email.
-                            for (QueryDocumentSnapshot document : task.getResult()) {
-                                Log.d(TAG, document.getId() + " => " + document.getData());
-                                // Log.d(TAG,"Email: "+document.get("email"));
-                                email=document.get("email").toString();
-                                // If it's not a new user don't add the user to database
-                                if(checkUser(email)) break;
-                                // If it's a new user add the user to database
-                                else addUserToDb();
+                            Log.d(TAG, "Task is successfull (loop is not started yet.)");
+                            Log.d(TAG, "///"+task.getResult());
+                            // QuerySnapshot document=task.getResult();
+                            if(task.getResult()==null){
+                                addUserToDb();
+                            }else{
+                                // Loop for query each email.
+                                for (QueryDocumentSnapshot document : task.getResult()) {
+                                    Log.d(TAG, document.getId() + " => " + document.getData());
+                                    // Log.d(TAG,"Email: "+document.get("email"));
+                                    email=document.get("email").toString();
+                                    Log.d(TAG, document.getId() + " ===> " + email);
+                                    // If it's not a new user don't add the user to database
+                                    if(checkUser(email)){
+                                        Log.d(TAG, "User is already exist." + email);
+                                        break;
+                                    }
+                                    // If it's a new user add the user to database
+                                    else {
+                                        Log.d(TAG, "Adding new user..." + email);
+                                        addUserToDb();
+                                    }
+                                }
                             }
+
+
+                            Log.d(TAG, "Task is successfull (out of the for loop)");
                         } else {
                             Log.w(TAG, "Error getting documents.", task.getException());
                         }
@@ -233,7 +251,7 @@ public class SignInActivity extends AppCompatActivity implements View.OnClickLis
      * @return
      */
     public boolean checkUser(String email1){
-        return email1==mFirebaseAuth.getCurrentUser().getEmail().toString() ?   true:  false;
+        return email1.equals(mFirebaseAuth.getCurrentUser().getEmail());
     }
 
 }

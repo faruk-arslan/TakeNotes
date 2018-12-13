@@ -2,6 +2,7 @@ package com.example.fr.takenotes;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -13,13 +14,17 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
-
+import java.util.Date;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -59,7 +64,6 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(addNoteIntent);
             }
         });
-//        createData();
 
         mRecyclerView=(RecyclerView) findViewById(R.id.recycler_view);
         LinearLayoutManager layoutManager=new LinearLayoutManager(this);
@@ -69,7 +73,7 @@ public class MainActivity extends AppCompatActivity {
          * change the child layout size in the RecyclerView
          */
         mRecyclerView.setHasFixedSize(true);
-        mAdapter= new NotesAdapter(noteArrayList);
+        mAdapter= new NotesAdapter(noteArrayList,this);
 
         if(mFirebaseAuth.getCurrentUser()!=null){
             getDataFromDB();
@@ -79,9 +83,6 @@ public class MainActivity extends AppCompatActivity {
         }
         mRecyclerView.setAdapter(mAdapter);
     }
-
-
-
 
     @Override
     protected void onStart() {
@@ -96,12 +97,33 @@ public class MainActivity extends AppCompatActivity {
         else{
             Toast.makeText(this, "We have logged in user: "+currentUser.getDisplayName(),
                     Toast.LENGTH_SHORT).show();
+            Log.d(TAG,"onStart ------> with current user");
             getDataFromDB();
         }
-
     }
 
     private void getDataFromDB(){
+
+        final DocumentReference docRef = db.collection("notes").
+                document(mFirebaseAuth.getCurrentUser().getUid());
+        docRef.addSnapshotListener(new EventListener<DocumentSnapshot>() {
+            @Override
+            public void onEvent(@Nullable DocumentSnapshot snapshot,
+                                @Nullable FirebaseFirestoreException e) {
+                if (e != null) {
+                    Log.w(TAG, "Listen failed.", e);
+                    return;
+                }
+
+                if (snapshot != null && snapshot.exists()) {
+                    Log.d(TAG, "Current data: " + snapshot.getData());
+                } else {
+                    Log.d(TAG, "Current data: null");
+                }
+            }
+        });
+
+
         db.collection("notes").document(mFirebaseAuth.getCurrentUser().getUid()).
                 collection("note_list")
                 .orderBy("date", Query.Direction.ASCENDING)
@@ -113,7 +135,9 @@ public class MainActivity extends AppCompatActivity {
                             Note note;
                             noteArrayList.clear();
                             for (QueryDocumentSnapshot document : task.getResult()) {
-                                note=new Note(document.getString("title"),document.getString("note"));
+                                note=new Note(document.getString("title"),document.getString("note"),
+                                        document.getString("id"), document.getLong("date"),
+                                        document.getLong("editDate"));
                                 Log.d(TAG, document.getId() + " => " + note.getmTitle()+"-"+note.getmNote());
                                 noteArrayList.add(note);
                                 Log.d(TAG, "---------"+noteArrayList.size());
@@ -124,22 +148,5 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
                 });
-
     }
-
-//    public void createData(){
-//        Note note=new Note("TİTLE1","NOTE1");
-//        noteArrayList.add(note);
-//        note=new Note("TİTLE2","NOTE2");
-//        noteArrayList.add(note);
-//        note=new Note("TİTLE3","NOTE3");
-//        noteArrayList.add(note);
-//        note=new Note("TİTLE4","NOTE4");
-//        noteArrayList.add(note);
-//        note=new Note("TİTLE5","NOTE5");
-//        noteArrayList.add(note);
-//
-//    }
-
-
 }

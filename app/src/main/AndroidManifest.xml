@@ -19,8 +19,8 @@
             </intent-filter>
         </activity>
         <activity android:name=".SignInActivity" />
-        <activity android:name=".AddNote" />
-        <activity android:name=".AddNoteActivity"></activity>
+        <activity android:name=".AddNoteActivity" />
+        <activity android:name=".EditNoteActivity"/>
     </application>
 
 </manifest>
