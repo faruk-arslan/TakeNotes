@@ -2,18 +2,20 @@ package com.example.fr.takenotes;
 
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.support.annotation.NonNull;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.RecyclerView;
+import android.util.SparseBooleanArray;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
-
-import com.google.firebase.firestore.DocumentSnapshot;
 
 import java.util.ArrayList;
 
@@ -23,6 +25,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NotesViewHol
     private ArrayList<Note> notesArrayList;
     private Context context;
 //    private static ClickListener clickListener;
+
 
     public NotesAdapter(ArrayList<Note> data,Context context){
         this.notesArrayList=data;
@@ -47,7 +50,8 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NotesViewHol
             @Override
             public void onClick(View view, int position, boolean isLongClick) {
                 if(isLongClick){
-                    Toast.makeText(context,"Long Click: "+notesArrayList.get(i).getmTitle(),Toast.LENGTH_SHORT).show();
+//                    makeAlertDialog(position);
+                    // myBackground is the RelativeLayout root of your row
                 }else {
                     Toast.makeText(context,"Click: "+notesArrayList.get(i).getmTitle(),Toast.LENGTH_SHORT).show();
                     Intent editNoteIntent=new Intent(context,EditNoteActivity.class);
@@ -67,7 +71,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NotesViewHol
         return notesArrayList.size();
     }
 
-    class NotesViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener,View.OnLongClickListener {
+    class NotesViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener,View.OnCreateContextMenuListener {
 
         TextView titleTextView, noteTextView;
         RelativeLayout parentLayout;
@@ -80,7 +84,10 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NotesViewHol
             parentLayout=itemView.findViewById(R.id.main_layout);
 
             itemView.setOnClickListener(this);
-            itemView.setOnLongClickListener(this);
+//            itemView.setOnLongClickListener(this);
+
+//            tvTitle =(TextView)itemView.findViewById(R.id.item_title);
+            itemView.setOnCreateContextMenuListener(this);
         }
 
         public void setItemClickListener(ItemClickListener itemClickListener){
@@ -92,10 +99,18 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NotesViewHol
             itemClickListener.onClick(view,getAdapterPosition(),false);
         }
 
+//        @Override
+//        public boolean onLongClick(View view) {
+//            itemClickListener.onClick(view,getAdapterPosition(),true);
+//            return true;
+//        }
+
         @Override
-        public boolean onLongClick(View view) {
-            itemClickListener.onClick(view,getAdapterPosition(),true);
-            return true;
+        public void onCreateContextMenu(ContextMenu contextMenu, View view, ContextMenu.ContextMenuInfo contextMenuInfo) {
+            contextMenu.setHeaderTitle("Select The Action");
+            contextMenu.add(this.getAdapterPosition(), R.id.share_single_note, 0, "Share");//groupId, itemId, order, title
+            contextMenu.add(this.getAdapterPosition(), R.id.delete_single_note, 0, "Delete");
         }
+
     }
 }

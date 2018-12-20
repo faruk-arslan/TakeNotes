@@ -1,30 +1,28 @@
 package com.example.fr.takenotes;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Toast;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
-import java.util.Date;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -41,9 +39,9 @@ public class MainActivity extends AppCompatActivity {
 
     private ArrayList<Note> noteArrayList;
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         // Initialize Firebase Auth
@@ -75,6 +73,8 @@ public class MainActivity extends AppCompatActivity {
         mRecyclerView.setHasFixedSize(true);
         mAdapter= new NotesAdapter(noteArrayList,this);
 
+
+
         if(mFirebaseAuth.getCurrentUser()!=null){
             getDataFromDB();
         }else{
@@ -85,8 +85,74 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onStart() {
-        super.onStart();
+    public boolean onContextItemSelected(MenuItem item) {
+        Note note=noteArrayList.get(item.getGroupId());
+        int position=item.getGroupId();
+        switch (item.getItemId()) {
+            case R.id.delete_single_note:
+                makeAlertDialog(note,position);
+                break;
+            case R.id.share_single_note:
+                String shareBody = "Share Note";
+                Intent sharingIntent = new Intent(android.content.Intent.ACTION_SEND);
+                sharingIntent.setType("text/plain");
+                sharingIntent.putExtra(android.content.Intent.EXTRA_SUBJECT,
+                        note.getmTitle());
+                sharingIntent.putExtra(android.content.Intent.EXTRA_TEXT,
+                        note.getmTitle()+"\n"+note.getmNote());
+                startActivity(Intent.createChooser(sharingIntent, "SHARE"));
+                break;
+        }
+        return super.onContextItemSelected(item);
+    }
+
+    private void makeAlertDialog(final Note note, final int position){
+        final AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+        alertDialog.setTitle("Alert");
+        alertDialog.setMessage("Do you want to delete the note?");
+        alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "Delete",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int i) {
+                        DeleteNote deleteNote=new DeleteNote(note.getmNoteId());
+                        noteArrayList.remove(position);
+                        mAdapter.notifyItemRemoved(position);
+                        mAdapter.notifyItemRangeChanged(position,noteArrayList.size());
+                        alertDialog.dismiss();
+                    }
+                });
+        alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, "Cancel",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        alertDialog.dismiss();
+                    }
+                });
+        alertDialog.show();
+    }
+
+//    @Override
+//    protected void onStart() {
+//        super.onStart();
+//        // Check if user is signed in (non-null) and update UI accordingly.
+//        FirebaseUser currentUser = mFirebaseAuth.getCurrentUser();
+//        // If there is no signed in user go to SignInActivity.
+//        if (currentUser==null){
+//            Intent signInIntent=new Intent(MainActivity.this,SignInActivity.class);
+//            startActivity(signInIntent);
+//        }
+//        else{
+//            Toast.makeText(this, "We have logged in user: "+currentUser.getDisplayName(),
+//                    Toast.LENGTH_SHORT).show();
+//            Log.d(TAG,"onStart ------> with current user");
+//            getDataFromDB();
+//        }
+//    }
+
+    @Override
+    protected void onPostResume() {
+
+        super.onPostResume();
         // Check if user is signed in (non-null) and update UI accordingly.
         FirebaseUser currentUser = mFirebaseAuth.getCurrentUser();
         // If there is no signed in user go to SignInActivity.
@@ -103,26 +169,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void getDataFromDB(){
-
-        final DocumentReference docRef = db.collection("notes").
-                document(mFirebaseAuth.getCurrentUser().getUid());
-        docRef.addSnapshotListener(new EventListener<DocumentSnapshot>() {
-            @Override
-            public void onEvent(@Nullable DocumentSnapshot snapshot,
-                                @Nullable FirebaseFirestoreException e) {
-                if (e != null) {
-                    Log.w(TAG, "Listen failed.", e);
-                    return;
-                }
-
-                if (snapshot != null && snapshot.exists()) {
-                    Log.d(TAG, "Current data: " + snapshot.getData());
-                } else {
-                    Log.d(TAG, "Current data: null");
-                }
-            }
-        });
-
 
         db.collection("notes").document(mFirebaseAuth.getCurrentUser().getUid()).
                 collection("note_list")
