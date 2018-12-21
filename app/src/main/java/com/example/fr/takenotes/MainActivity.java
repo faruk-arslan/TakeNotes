@@ -6,13 +6,18 @@ import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
+import android.text.Layout;
+import android.text.SpannableString;
+import android.text.style.AlignmentSpan;
+import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.Toast;
+import android.widget.TextView;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
@@ -36,6 +41,7 @@ public class MainActivity extends AppCompatActivity {
     // Get the adapter and the recycler view references.
     private NotesAdapter mAdapter;
     private RecyclerView mRecyclerView;
+    private TextView emptyView;
 
     private ArrayList<Note> noteArrayList;
 
@@ -64,6 +70,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         mRecyclerView=(RecyclerView) findViewById(R.id.recycler_view);
+        emptyView = (TextView) findViewById(R.id.empty_view);
         LinearLayoutManager layoutManager=new LinearLayoutManager(this);
         mRecyclerView.setLayoutManager(layoutManager);
         /*
@@ -73,15 +80,59 @@ public class MainActivity extends AppCompatActivity {
         mRecyclerView.setHasFixedSize(true);
         mAdapter= new NotesAdapter(noteArrayList,this);
 
-
+        DividerItemDecoration itemDecor = new DividerItemDecoration(this, DividerItemDecoration.VERTICAL);
+        mRecyclerView.addItemDecoration(itemDecor);
 
         if(mFirebaseAuth.getCurrentUser()!=null){
+            getDataFromDB();
+        }else{
+            Intent i=new Intent(MainActivity.this,SignInActivity.class);
+            startActivity(i);
+        }
+        mRecyclerView.setAdapter(mAdapter);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Check if user is signed in (non-null) and update UI accordingly.
+        FirebaseUser currentUser = mFirebaseAuth.getCurrentUser();
+        // If there is no signed in user go to SignInActivity.
+        if(currentUser!=null){
             getDataFromDB();
         }else{
             Intent signInIntent=new Intent(MainActivity.this,SignInActivity.class);
             startActivity(signInIntent);
         }
-        mRecyclerView.setAdapter(mAdapter);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        //return super.onCreateOptionsMenu(menu);
+        MenuInflater menuInflater=getMenuInflater();
+        menuInflater.inflate(R.menu.menu_main_bar,menu);
+        // Code for align the log_out string center in the menu.
+        int positionOfMenuItem = 0; //or any other postion
+        MenuItem item = menu.getItem(positionOfMenuItem);
+        SpannableString s = new SpannableString(getString(R.string.log_out));
+
+        s.setSpan(new AlignmentSpan.Standard(Layout.Alignment.ALIGN_CENTER), 0, s.length(), 0);
+
+        item.setTitle(s);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        //return super.onOptionsItemSelected(item);
+        switch (item.getItemId()){
+            case R.id.log_out:
+                FirebaseAuth.getInstance().signOut();
+                onResume();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     @Override
@@ -93,24 +144,43 @@ public class MainActivity extends AppCompatActivity {
                 makeAlertDialog(note,position);
                 break;
             case R.id.share_single_note:
-                String shareBody = "Share Note";
+                String shareBody = getString(R.string.share_note);
                 Intent sharingIntent = new Intent(android.content.Intent.ACTION_SEND);
                 sharingIntent.setType("text/plain");
                 sharingIntent.putExtra(android.content.Intent.EXTRA_SUBJECT,
                         note.getmTitle());
                 sharingIntent.putExtra(android.content.Intent.EXTRA_TEXT,
                         note.getmTitle()+"\n"+note.getmNote());
-                startActivity(Intent.createChooser(sharingIntent, "SHARE"));
+                startActivity(Intent.createChooser(sharingIntent, getString(R.string.share)));
                 break;
         }
         return super.onContextItemSelected(item);
     }
 
+    @Override
+    public void onBackPressed() {
+        Intent a = new Intent(Intent.ACTION_MAIN);
+        a.addCategory(Intent.CATEGORY_HOME);
+        a.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(a);
+    }
+
+    private void isViewEmpty(){
+        if (noteArrayList.isEmpty()) {
+            mRecyclerView.setVisibility(View.GONE);
+            emptyView.setVisibility(View.VISIBLE);
+        }
+        else {
+            mRecyclerView.setVisibility(View.VISIBLE);
+            emptyView.setVisibility(View.GONE);
+        }
+    }
+
     private void makeAlertDialog(final Note note, final int position){
         final AlertDialog alertDialog = new AlertDialog.Builder(this).create();
-        alertDialog.setTitle("Alert");
-        alertDialog.setMessage("Do you want to delete the note?");
-        alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "Delete",
+        alertDialog.setTitle(getString(R.string.warning));
+        alertDialog.setMessage(getString(R.string.quest_del_note));
+        alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.delete),
                 new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int i) {
@@ -118,10 +188,11 @@ public class MainActivity extends AppCompatActivity {
                         noteArrayList.remove(position);
                         mAdapter.notifyItemRemoved(position);
                         mAdapter.notifyItemRangeChanged(position,noteArrayList.size());
+                        isViewEmpty();
                         alertDialog.dismiss();
                     }
                 });
-        alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, "Cancel",
+        alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.cancel),
                 new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
@@ -129,43 +200,6 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
         alertDialog.show();
-    }
-
-//    @Override
-//    protected void onStart() {
-//        super.onStart();
-//        // Check if user is signed in (non-null) and update UI accordingly.
-//        FirebaseUser currentUser = mFirebaseAuth.getCurrentUser();
-//        // If there is no signed in user go to SignInActivity.
-//        if (currentUser==null){
-//            Intent signInIntent=new Intent(MainActivity.this,SignInActivity.class);
-//            startActivity(signInIntent);
-//        }
-//        else{
-//            Toast.makeText(this, "We have logged in user: "+currentUser.getDisplayName(),
-//                    Toast.LENGTH_SHORT).show();
-//            Log.d(TAG,"onStart ------> with current user");
-//            getDataFromDB();
-//        }
-//    }
-
-    @Override
-    protected void onPostResume() {
-
-        super.onPostResume();
-        // Check if user is signed in (non-null) and update UI accordingly.
-        FirebaseUser currentUser = mFirebaseAuth.getCurrentUser();
-        // If there is no signed in user go to SignInActivity.
-        if (currentUser==null){
-            Intent signInIntent=new Intent(MainActivity.this,SignInActivity.class);
-            startActivity(signInIntent);
-        }
-        else{
-            Toast.makeText(this, "We have logged in user: "+currentUser.getDisplayName(),
-                    Toast.LENGTH_SHORT).show();
-            Log.d(TAG,"onStart ------> with current user");
-            getDataFromDB();
-        }
     }
 
     private void getDataFromDB(){
@@ -184,13 +218,11 @@ public class MainActivity extends AppCompatActivity {
                                 note=new Note(document.getString("title"),document.getString("note"),
                                         document.getString("id"), document.getLong("date"),
                                         document.getLong("editDate"));
-                                Log.d(TAG, document.getId() + " => " + note.getmTitle()+"-"+note.getmNote());
                                 noteArrayList.add(note);
-                                Log.d(TAG, "---------"+noteArrayList.size());
                             }
+                            isViewEmpty();
                             mAdapter.notifyDataSetChanged();
                         } else {
-                            Log.d(TAG, "Error getting documents: ", task.getException());
                         }
                     }
                 });

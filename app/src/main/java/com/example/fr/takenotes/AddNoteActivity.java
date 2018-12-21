@@ -1,9 +1,11 @@
 package com.example.fr.takenotes;
 
+import android.content.DialogInterface;
 import android.support.annotation.NonNull;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -16,7 +18,6 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,12 +34,14 @@ public class AddNoteActivity extends AppCompatActivity {
     EditText mTitleEditText, mNoteEditText;
     // String definitions for title and note.
     String mTitle, mNote;
+    Long mTime, mEditTime;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_note);
+        getSupportActionBar().setTitle(getString(R.string.app_bar_add));
         // Initialize Firebase Auth
         mFirebaseAuth=FirebaseAuth.getInstance();
         // Inıtialize the Firebase Firestore
@@ -61,7 +64,6 @@ public class AddNoteActivity extends AppCompatActivity {
         //return super.onOptionsItemSelected(item);
         switch (item.getItemId()){
             case R.id.save_note:
-                // Toast.makeText(this, "Menu is working", Toast.LENGTH_SHORT).show();
                 saveNoteToDb();
                 return true;
             default:
@@ -70,36 +72,90 @@ public class AddNoteActivity extends AppCompatActivity {
     }
 
     private void saveNoteToDb() {
+        DocumentReference noteRef=db.collection("notes").document(mFirebaseAuth.getCurrentUser().getUid()).
+                collection("note_list").document();
+
         mTitle=mTitleEditText.getText().toString().trim();
         mNote=mNoteEditText.getText().toString().trim();
-        // Get the current timestamp
-        Long time = new Date().getTime();
-        // Create a new note with a first and last name
-        Map<String, Object> note = new HashMap<>();
-        // note.put("user_id", mFirebaseAuth.getCurrentUser().getUid());
-        note.put("title", mTitle);
-        note.put("note", mNote);
-        note.put("date",time);
+        if(mTitle.isEmpty()&&mNote.isEmpty()){
+            Toast.makeText(this,getString(R.string.empty_save),Toast.LENGTH_SHORT).show();
+//            return;
+        }else{
+            // Get the current timestamp
+            mTime= new Date().getTime();
+            // mEditTime=new Date().getTime();
+            // Create a new note with a first and last name
+            Map<String, Object> note = new HashMap<>();
+            // note.put("user_id", mFirebaseAuth.getCurrentUser().getUid());
+            note.put("title", mTitle);
+            note.put("note", mNote);
+            note.put("date", mTime);
+            note.put("editDate", mTime);
+            note.put("id",noteRef.getId());
 
-        // Add a new document with a generated ID
-        db.collection("notes").document(mFirebaseAuth.getCurrentUser().getUid()).
-                collection("note_list")
-                .add(note)
-                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+            noteRef.set(note)
+                    .addOnSuccessListener(new OnSuccessListener<Void>() {
+                        @Override
+                        public void onSuccess(Void aVoid) {
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                        }
+                    });
+            // Go back to the MainActivity.
+            finish();
+        }
+
+    }
+
+    private boolean isChanged(){
+        String title, note;
+        title=mTitleEditText.getText().toString().trim();
+        note=mNoteEditText.getText().toString().trim();
+        if(title.isEmpty()&&note.isEmpty()){
+            return false;
+        }else{
+            return true;
+        }
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0) {
+            // do something on back.
+            if (isChanged()){
+                showAlertDialogUnsavedChanges();
+            } else{
+                finish();
+            }
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
+    private void showAlertDialogUnsavedChanges(){
+        final AlertDialog alertDialog = new AlertDialog.Builder(AddNoteActivity.this).create();
+        alertDialog.setTitle(getString(R.string.warning));
+        alertDialog.setMessage(getString(R.string.quest_save_changes));
+        alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.save),
+                new DialogInterface.OnClickListener() {
                     @Override
-                    public void onSuccess(DocumentReference documentReference) {
-                        Log.d(TAG, "DocumentSnapshot added with ID: " + documentReference.getId());
-                    }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Log.w(TAG, "Error adding document", e);
+                    public void onClick(DialogInterface dialog, int i) {
+                        saveNoteToDb();
+                        alertDialog.dismiss();
                     }
                 });
-
-        // Go back to the MainActivity.
-        finish();
+        alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.cancel),
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        alertDialog.dismiss();
+                        finish();
+                    }
+                });
+        alertDialog.show();
     }
 
 }

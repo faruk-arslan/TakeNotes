@@ -1,3 +1,30 @@
 <resources>
     <string name="app_name">Take Notes</string>
+    <string name="google_sign_in">Google ile Giriş Yap</string>
+    <string name="log_out">Çıkış Yap</string>
+    <string name="title">Başlık</string>
+    <string name="note">Not</string>
+    <string name="delete">Sil</string>
+    <string name="share">Paylaş</string>
+    <string name="context_menu_select_action">İşlem Seçin</string>
+    <string name="warning">Uyarı</string>
+    <string name="warning_desc">Lütfen özel bilgilerinizi (kredi kartı numarası, şifresi,
+    mail ve sosyal medya hesaplarının şifrelerini) notlarınıza eklemeyin.</string>
+    <string name="welcome_msg">Hoş geldin </string>
+    <string name="login_fail">Giriş yaparken bir hata oluştu.</string>
+    <string name="empty_save">Kaydedilecek not boş olamaz.</string>
+    <string name="okay">Tamam</string>
+    <string name="share_note">Notu Paylaş</string>
+    <string name="quest_del_note">Notu silmek istiyor musunuz?</string>
+    <string name="cancel">Vazgeç</string>
+    <string name="auth_failed">Giriş başarısız</string>
+    <string name="quest_save_changes">Değişiklikleri kaydetmek istiyor musunuz?</string>
+    <string name="save">Kaydet</string>
+    <string name="empty_view">Henüz not eklemediniz.Ekle tuşuna tıklayarak not almaya başlayabilirsiniz.</string>
+    <string name="app_bar_edit">Düzenle</string>
+    <string name="app_bar_add">Yeni Not Ekle</string>
+    <string name="welcome_msg_header">Take Notes\'a Hoş Geldiniz</string>
+    <string name="welcome_msg_text">Google hesabınızla giriş yaparak uygulamayı kullanmaya
+ başlayabilirsiniz.</string>
+
 </resources>

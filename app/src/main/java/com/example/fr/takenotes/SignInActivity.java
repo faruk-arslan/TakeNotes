@@ -1,14 +1,16 @@
 package com.example.fr.takenotes;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
-import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
@@ -38,7 +40,6 @@ public class SignInActivity extends AppCompatActivity implements View.OnClickLis
 
     private static final String TAG="SignInActivity";
     SignInButton signInButton;
-    Button signOutButton;
     // Google Sign-In is a secure authentication system that reduces
     // the burden of login for your users, by enabling them to sign
     // in with their Google Account.
@@ -47,8 +48,6 @@ public class SignInActivity extends AppCompatActivity implements View.OnClickLis
     // Firebase Authentication provides backend services, easy-to-use SDKs,
     // and ready-made UI libraries to authenticate users to your app.
     private FirebaseAuth mFirebaseAuth;
-    // Access a Cloud Firestore instance from your Activity
-    FirebaseFirestore db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,9 +56,6 @@ public class SignInActivity extends AppCompatActivity implements View.OnClickLis
 
         // Initialize Firebase Auth
         mFirebaseAuth=FirebaseAuth.getInstance();
-
-        // Inıtialize the Firebase Firestore
-        db=FirebaseFirestore.getInstance();
 
         // Configure sign-in to request the user's ID, email address, and basic
         // profile. ID and basic profile are included in DEFAULT_SIGN_IN.
@@ -73,11 +69,42 @@ public class SignInActivity extends AppCompatActivity implements View.OnClickLis
 
         // Get the Sign In and Sign Out buttons from layout.
         signInButton= (SignInButton) findViewById(R.id.sign_in_button);
-        signOutButton=(Button) findViewById(R.id.sign_out_button);
+        TextView textView = (TextView) signInButton.getChildAt(0);
+        textView.setText(R.string.google_sign_in);
+
+//        if(mFirebaseAuth.getCurrentUser()!=null){
+//            Intent mainActivityIntent=new Intent(SignInActivity.this,
+//                    MainActivity.class);
+//            startActivity(mainActivityIntent);
+//        }
+//        updateUI(mFirebaseAuth.getCurrentUser());
 
         // Set the buttons On Click Listeners.
         signInButton.setOnClickListener(this);
-        signOutButton.setOnClickListener(this);
+//        makeInfoDialog();
+    }
+
+//    @Override
+//    protected void onStart() {
+//        super.onStart();
+//        // Check if user is signed in (non-null) and update UI accordingly.
+//        FirebaseUser currentUser = mFirebaseAuth.getCurrentUser();
+//        updateUI(currentUser);
+//    }
+
+//    @Override
+//    protected void onResume() {
+//        super.onResume();
+//        updateUI(mFirebaseAuth.getCurrentUser());
+//    }
+
+    @Override
+    public void onBackPressed() {
+        //super.onBackPressed();
+        Intent a = new Intent(Intent.ACTION_MAIN);
+        a.addCategory(Intent.CATEGORY_HOME);
+        a.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(a);
     }
 
     @Override
@@ -86,19 +113,14 @@ public class SignInActivity extends AppCompatActivity implements View.OnClickLis
             case R.id.sign_in_button:
                 signIn();
                 break;
-            case R.id.sign_out_button:
-                signOut();
-                break;
+            default:
+                return;
         }
     }
 
     private void signIn() {
         Intent signInIntent = mGoogleSignInClient.getSignInIntent();
         startActivityForResult(signInIntent, RC_SIGN_IN);
-    }
-
-    private void signOut() {
-        FirebaseAuth.getInstance().signOut();
     }
 
     @Override
@@ -123,19 +145,16 @@ public class SignInActivity extends AppCompatActivity implements View.OnClickLis
             GoogleSignInAccount account = completedTask.getResult(ApiException.class);
             firebaseAuthWithGoogle(account);
             // Signed in successfully, show authenticated UI.
-            // updateUI(account);
+//             updateUI(account);
         } catch (ApiException e) {
             // The ApiException status code indicates the detailed failure reason.
             // Please refer to the GoogleSignInStatusCodes class reference for more information.
-            Log.w(TAG, "signInResult:failed code=" + e.getStatusCode());
             // updateUI(null);
         }
     }
 
 
     private void firebaseAuthWithGoogle(GoogleSignInAccount acct) {
-
-        Log.d(TAG, "firebaseAuthWithGoogle:" + acct.getId());
 
         AuthCredential credential = GoogleAuthProvider.getCredential(acct.getIdToken(), null);
         mFirebaseAuth.signInWithCredential(credential)
@@ -144,13 +163,12 @@ public class SignInActivity extends AppCompatActivity implements View.OnClickLis
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
                             // Sign in success, update UI with the signed-in user's information
-                            Log.d(TAG, "signInWithCredential:success");
                             FirebaseUser user = mFirebaseAuth.getCurrentUser();
                             updateUI(user);
                         } else {
                             // If sign in fails, display a message to the user.
-                            Log.w(TAG, "signInWithCredential:failure", task.getException());
-                            Snackbar.make(findViewById(R.id.main_layout_sign_in), "Authentication Failed.", Snackbar.LENGTH_SHORT).show();
+                            Snackbar.make(findViewById(R.id.main_layout_sign_in),
+                                    getString(R.string.auth_failed), Snackbar.LENGTH_SHORT).show();
                             updateUI(null);
                         }
                         // ...
@@ -160,98 +178,28 @@ public class SignInActivity extends AppCompatActivity implements View.OnClickLis
 
     private void updateUI(FirebaseUser account) {
         if(account!=null){
-            Toast.makeText(this, "Logged In", Toast.LENGTH_SHORT).show();
-            Intent mainActivityIntent=new Intent(SignInActivity.this,MainActivity.class);
-            //isNewUser();
-            addUserToDb();
+            Intent mainActivityIntent=new Intent(SignInActivity.this,
+                    MainActivity.class);
             startActivity(mainActivityIntent);
-        } else{
-            Toast.makeText(this, "Failed when Logging In", Toast.LENGTH_SHORT).show();
+        }
+        else{
+            Toast.makeText(this,getString(R.string.login_fail),
+                    Toast.LENGTH_SHORT).show();
         }
     }
 
-    /**
-     * Checks is logged in user is a new user or existing user.
-     * If it's a new user add the user to database otherwise don't.
-     */
-    public void isNewUser(){
-        // db collection path for reading operations.
-        db.collection("users")
-                .get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        if (task.isSuccessful()) {
-                            // String for assign the emails which are read from database.
-                            String email;
-                            Log.d(TAG, "Task is successfull (loop is not started yet.)");
-                            Log.d(TAG, "///"+task.getResult());
-                            // QuerySnapshot document=task.getResult();
-                            if(task.getResult()==null){
-                                addUserToDb();
-                            }else{
-                                // Loop for query each email.
-                                for (QueryDocumentSnapshot document : task.getResult()) {
-                                    Log.d(TAG, document.getId() + " => " + document.getData());
-                                    // Log.d(TAG,"Email: "+document.get("email"));
-                                    email=document.get("email").toString();
-                                    Log.d(TAG, document.getId() + " ===> " + email);
-                                    // If it's not a new user don't add the user to database
-                                    if(checkUser(email)){
-                                        Log.d(TAG, "User is already exist." + email);
-                                        break;
-                                    }
-                                    // If it's a new user add the user to database
-                                    else {
-                                        Log.d(TAG, "Adding new user..." + email);
-                                        addUserToDb();
-                                    }
-                                }
-                            }
-
-
-                            Log.d(TAG, "Task is successfull (out of the for loop)");
-                        } else {
-                            Log.w(TAG, "Error getting documents.", task.getException());
-                        }
-                    }
-                });
-    }
-
-    /**
-     * Adds the user to database.
-     */
-    public void addUserToDb(){
-        // Create a new user with a first and last name
-        Map<String, Object> user = new HashMap<>();
-        user.put("user_id", mFirebaseAuth.getCurrentUser().getUid());
-        user.put("name", mFirebaseAuth.getCurrentUser().getDisplayName());
-        user.put("email", mFirebaseAuth.getCurrentUser().getEmail());
-
-        // Add a new document with a generated ID
-        db.collection("users")
-                .add(user)
-                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
-                    @Override
-                    public void onSuccess(DocumentReference documentReference) {
-                        Log.d(TAG, "DocumentSnapshot added with ID: " + documentReference.getId());
-                    }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Log.w(TAG, "Error adding document", e);
-                    }
-                });
-    }
-
-    /**
-     * Checks two Strings(email). Returns true if Strings are equal, otherwise returns false.
-     * @param email1
-     * @return
-     */
-    public boolean checkUser(String email1){
-        return email1.equals(mFirebaseAuth.getCurrentUser().getEmail());
-    }
+//    private void makeInfoDialog(){
+//        final AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+//        alertDialog.setTitle(getString(R.string.warning));
+//        alertDialog.setMessage(getString(R.string.warning_desc));
+//        alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.okay),
+//                new DialogInterface.OnClickListener() {
+//                    @Override
+//                    public void onClick(DialogInterface dialog, int i) {
+//                        alertDialog.dismiss();
+//                    }
+//                });
+//        alertDialog.show();
+//    }
 
 }

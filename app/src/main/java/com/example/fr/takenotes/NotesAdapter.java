@@ -2,21 +2,15 @@ package com.example.fr.takenotes;
 
 
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.support.annotation.NonNull;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.RecyclerView;
-import android.util.SparseBooleanArray;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.Toast;
-
 import java.util.ArrayList;
 
 public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NotesViewHolder> {
@@ -50,10 +44,8 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NotesViewHol
             @Override
             public void onClick(View view, int position, boolean isLongClick) {
                 if(isLongClick){
-//                    makeAlertDialog(position);
-                    // myBackground is the RelativeLayout root of your row
+
                 }else {
-                    Toast.makeText(context,"Click: "+notesArrayList.get(i).getmTitle(),Toast.LENGTH_SHORT).show();
                     Intent editNoteIntent=new Intent(context,EditNoteActivity.class);
                     editNoteIntent.putExtra("title_extra",notesArrayList.get(i).getmTitle());
                     editNoteIntent.putExtra("note_extra",notesArrayList.get(i).getmNote());
@@ -107,9 +99,11 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NotesViewHol
 
         @Override
         public void onCreateContextMenu(ContextMenu contextMenu, View view, ContextMenu.ContextMenuInfo contextMenuInfo) {
-            contextMenu.setHeaderTitle("Select The Action");
-            contextMenu.add(this.getAdapterPosition(), R.id.share_single_note, 0, "Share");//groupId, itemId, order, title
-            contextMenu.add(this.getAdapterPosition(), R.id.delete_single_note, 0, "Delete");
+            contextMenu.setHeaderTitle(context.getString(R.string.context_menu_select_action));
+            contextMenu.add(this.getAdapterPosition(),
+                    R.id.share_single_note, 0, context.getString(R.string.share));//groupId, itemId, order, title
+            contextMenu.add(this.getAdapterPosition(),
+                    R.id.delete_single_note, 0, context.getString(R.string.delete));
         }
 
     }

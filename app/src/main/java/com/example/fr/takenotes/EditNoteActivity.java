@@ -6,28 +6,19 @@ import android.support.annotation.NonNull;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.widget.EditText;
-import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreException;
-import com.google.firebase.firestore.Transaction;
 
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-
-import static android.support.constraint.Constraints.TAG;
 
 public class EditNoteActivity extends AppCompatActivity {
     // TAG for AddNoteActivity class.
@@ -41,12 +32,12 @@ public class EditNoteActivity extends AppCompatActivity {
     EditText mTitleEditText, mNoteEditText;
     // String definitions for title and note.
     String mTitle, mNote, mId;
-    Long mTime, mEditTime;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit_note);
+        getSupportActionBar().setTitle(getString(R.string.app_bar_edit));
         // Initialize Firebase Auth
         mFirebaseAuth=FirebaseAuth.getInstance();
         // Inıtialize the Firebase Firestore
@@ -71,7 +62,6 @@ public class EditNoteActivity extends AppCompatActivity {
         //return super.onOptionsItemSelected(item);
         switch (item.getItemId()){
             case R.id.save_note:
-                // Toast.makeText(this, "Menu is working", Toast.LENGTH_SHORT).show();
                 updateNote();
                 return true;
             case R.id.share_note:
@@ -112,9 +102,9 @@ public class EditNoteActivity extends AppCompatActivity {
 
     private void showAlertDialogUnsavedChanges(){
         final AlertDialog alertDialog = new AlertDialog.Builder(EditNoteActivity.this).create();
-        alertDialog.setTitle("Alert");
-        alertDialog.setMessage("Do you want to save the changes?");
-        alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "Save",
+        alertDialog.setTitle(getString(R.string.warning));
+        alertDialog.setMessage(getString(R.string.quest_save_changes));
+        alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.save),
                 new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int i) {
@@ -122,7 +112,7 @@ public class EditNoteActivity extends AppCompatActivity {
                         alertDialog.dismiss();
                     }
                 });
-        alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, "Cancel",
+        alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.cancel),
                 new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
@@ -161,25 +151,23 @@ public class EditNoteActivity extends AppCompatActivity {
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
-                        Log.d(TAG, "DocumentSnapshot successfully updated!");
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        Log.w(TAG, "Error updating document", e);
                     }
                 });
         finish();
     }
 
     private void shareNote(){
-        String shareBody = "Share Note";
+        String shareBody = getString(R.string.share);
         Intent sharingIntent = new Intent(android.content.Intent.ACTION_SEND);
         sharingIntent.setType("text/plain");
         sharingIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, mTitle);
         sharingIntent.putExtra(android.content.Intent.EXTRA_TEXT, mTitle+"\n"+mNote);
-        startActivity(Intent.createChooser(sharingIntent, "SHARE"));
+        startActivity(Intent.createChooser(sharingIntent, getString(R.string.share)));
     }
 
     private void deleteNote(){
@@ -189,13 +177,11 @@ public class EditNoteActivity extends AppCompatActivity {
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
-                        Log.d(TAG, "DocumentSnapshot successfully deleted!");
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        Log.w(TAG, "Error deleting document", e);
                     }
                 });
         finish();
@@ -203,9 +189,9 @@ public class EditNoteActivity extends AppCompatActivity {
 
     private void showAlertDialogDelete(){
         final AlertDialog alertDialog = new AlertDialog.Builder(this).create();
-        alertDialog.setTitle("Alert");
-        alertDialog.setMessage("Do you want to delete the note?");
-        alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "Delete",
+        alertDialog.setTitle(getString(R.string.warning));
+        alertDialog.setMessage(getString(R.string.quest_del_note));
+        alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.delete),
                 new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int i) {
@@ -213,7 +199,7 @@ public class EditNoteActivity extends AppCompatActivity {
                         alertDialog.dismiss();
                     }
                 });
-        alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, "Cancel",
+        alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.cancel),
                 new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
